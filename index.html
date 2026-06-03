@@ -372,11 +372,7 @@ function loadFromLS() {
 }
 
 function saveState() {
-  // Always persist to localStorage
   localStorage.setItem(LS_KEY, JSON.stringify(movies));
-  // Update URL hash to reflect current state
-  const encoded = encodeURIComponent(JSON.stringify(movies));
-  history.replaceState(null, '', '#' + encoded);
 }
 
 function loadState() {
@@ -414,6 +410,7 @@ function doMerge() {
   });
   pendingShared = null;
   saveState();
+  history.replaceState(null, '', window.location.pathname);
   render();
   document.getElementById('mergeBanner').classList.remove('visible');
 }
