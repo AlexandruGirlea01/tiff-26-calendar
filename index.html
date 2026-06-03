@@ -618,6 +618,7 @@ function submitMovie() {
   for (const row of rows) {
     if (!row.day || !row.time) continue;
     const day = parseInt(row.day);
+    if (day > 21 || day < 12 || isNaN(day)) { alert(`Invalid day: ${row.day}. Must be between 12 and 21.`); return; }
     const [hStr, mStr] = row.time.split(':');
     const h = parseInt(hStr), m = parseInt(mStr||0);
     if (isNaN(day)||isNaN(h)||isNaN(m)) { alert(`Invalid screening: day=${row.day} time=${row.time}`); return; }
