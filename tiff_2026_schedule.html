@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TIFF 2026 — Schedule</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: #f5f3ef;
+    color: #1a1a18;
+    padding: 2rem;
+    min-width: 900px;
+  }
+
+  h1 {
+    font-size: 22px;
+    font-weight: 600;
+    letter-spacing: -0.5px;
+    margin-bottom: 4px;
+  }
+
+  .subtitle {
+    font-size: 13px;
+    color: #888780;
+    margin-bottom: 2rem;
+    font-family: 'DM Mono', monospace;
+  }
+
+  .schedule-wrapper {
+    display: flex;
+    gap: 0;
+  }
+
+  .time-col {
+    width: 52px;
+    flex-shrink: 0;
+    padding-top: 36px;
+  }
+
+  .time-label {
+    height: 48px;
+    display: flex;
+    align-items: flex-start;
+    justify-content: flex-end;
+    padding-right: 10px;
+    font-size: 11px;
+    font-family: 'DM Mono', monospace;
+    color: #888780;
+    transform: translateY(-6px);
+  }
+
+  .grid-container {
+    flex: 1;
+    overflow-x: auto;
+  }
+
+  .day-headers {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    margin-bottom: 0;
+  }
+
+  .day-header {
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 500;
+    color: #5f5e5a;
+    border-left: 1px solid #d3d1c7;
+    border-top: 1px solid #d3d1c7;
+    background: #eeecea;
+    font-family: 'DM Mono', monospace;
+  }
+  .day-header:last-child { border-right: 1px solid #d3d1c7; }
+
+  .grid-body {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    position: relative;
+  }
+
+  .day-column {
+    position: relative;
+    border-left: 1px solid #d3d1c7;
+  }
+  .day-column:last-child { border-right: 1px solid #d3d1c7; }
+
+  .hour-cell {
+    height: 48px;
+    border-bottom: 1px solid #d3d1c7;
+    background: #faf9f7;
+  }
+  .hour-cell:nth-child(odd) { background: #f5f3ef; }
+
+  .movie-block {
+    position: absolute;
+    left: 3px;
+    right: 3px;
+    height: 22px;
+    border-radius: 3px;
+    padding: 0 6px;
+    font-size: 11px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    cursor: default;
+    z-index: 2;
+    transition: opacity 0.15s, transform 0.1s;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+  }
+  .movie-block:hover {
+    opacity: 0.9;
+    transform: scaleY(1.04);
+    z-index: 10;
+  }
+
+  .legend {
+    margin-top: 1.5rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: #5f5e5a;
+  }
+  .legend-swatch {
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+
+  .overlap-note {
+    margin-top: 1.5rem;
+    background: #fff8ec;
+    border: 1px solid #fac775;
+    border-radius: 6px;
+    padding: 10px 14px;
+    font-size: 12px;
+    color: #633806;
+    line-height: 1.6;
+  }
+  .overlap-note strong { font-weight: 600; }
+
+  .toolbar {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 1.5rem;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .btn {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 6px 14px;
+    border-radius: 4px;
+    border: 1px solid #c9c7bc;
+    background: #fff;
+    color: #1a1a18;
+    cursor: pointer;
+    transition: background 0.1s;
+  }
+  .btn:hover { background: #eeecea; }
+  .btn-primary { background: #1a1a18; color: #f5f3ef; border-color: #1a1a18; }
+  .btn-primary:hover { background: #333; }
+  .btn-danger { color: #a32d2d; border-color: #e8b4b4; }
+  .btn-danger:hover { background: #fdf0f0; }
+
+  .share-box {
+    display: none;
+    margin-bottom: 1.5rem;
+    background: #eeecea;
+    border: 1px solid #d3d1c7;
+    border-radius: 6px;
+    padding: 10px 14px;
+    font-size: 12px;
+    gap: 8px;
+    align-items: center;
+  }
+  .share-box.visible { display: flex; }
+  .share-url {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    flex: 1;
+    background: #fff;
+    border: 1px solid #d3d1c7;
+    border-radius: 3px;
+    padding: 5px 8px;
+    color: #5f5e5a;
+    word-break: break-all;
+    user-select: all;
+  }
+
+  .add-panel {
+    display: none;
+    margin-bottom: 1.5rem;
+    background: #fff;
+    border: 1px solid #d3d1c7;
+    border-radius: 6px;
+    padding: 16px;
+    gap: 12px;
+    flex-direction: column;
+  }
+  .add-panel.visible { display: flex; }
+  .add-panel h3 { font-size: 13px; font-weight: 600; margin-bottom: 2px; }
+  .form-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: flex-end; }
+  .form-group { display: flex; flex-direction: column; gap: 4px; }
+  .form-group label { font-size: 11px; color: #888780; font-family: 'DM Mono', monospace; }
+  .form-group input {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    padding: 5px 8px;
+    border: 1px solid #d3d1c7;
+    border-radius: 3px;
+    background: #faf9f7;
+    color: #1a1a18;
+    width: 100%;
+  }
+  .form-group input:focus { outline: none; border-color: #888780; }
+  .screening-list { display: flex; flex-direction: column; gap: 6px; }
+  .screening-row { display: flex; gap: 6px; align-items: center; }
+  .screening-row input { width: 80px; }
+  .remove-screening { background: none; border: none; color: #a32d2d; cursor: pointer; font-size: 14px; padding: 0 4px; }
+  .color-swatches { display: flex; gap: 6px; flex-wrap: wrap; }
+  .color-swatch-btn {
+    width: 20px; height: 20px; border-radius: 3px; border: 2px solid transparent;
+    cursor: pointer; transition: border-color 0.1s;
+  }
+  .color-swatch-btn.selected { border-color: #1a1a18; }
+</style>
+</head>
+<body>
+
+<h1>TIFF 2026</h1>
+<p class="subtitle">June 14 – 21 · screening schedule</p>
+
+<div class="toolbar">
+  <button class="btn btn-primary" onclick="toggleAddPanel()">+ Add movie</button>
+  <button class="btn" onclick="toggleShare()">🔗 Copy shareable link</button>
+  <button class="btn btn-danger" onclick="resetToDefaults()">Reset to defaults</button>
+</div>
+
+<div class="share-box" id="shareBox">
+  <div class="share-url" id="shareUrl"></div>
+  <button class="btn" onclick="copyUrl()">Copy</button>
+</div>
+
+<div class="add-panel" id="addPanel">
+  <h3>Add a movie</h3>
+  <div class="form-row">
+    <div class="form-group" style="flex:2; min-width:140px;">
+      <label>TITLE</label>
+      <input type="text" id="inp-title" placeholder="e.g. My Movie" />
+    </div>
+    <div class="form-group" style="flex:2; min-width:140px;">
+      <label>LINK (optional)</label>
+      <input type="text" id="inp-link" placeholder="https://..." />
+    </div>
+  </div>
+  <div class="form-group">
+    <label>COLOR</label>
+    <div class="color-swatches" id="colorSwatches"></div>
+  </div>
+  <div class="form-group">
+    <label>SCREENINGS (day / HH:MM)</label>
+    <div class="screening-list" id="screeningList"></div>
+    <button class="btn" style="margin-top:6px; width:fit-content;" onclick="addScreeningRow()">+ Add screening</button>
+  </div>
+  <div class="form-row">
+    <button class="btn btn-primary" onclick="submitMovie()">Add to schedule</button>
+    <button class="btn" onclick="toggleAddPanel()">Cancel</button>
+  </div>
+</div>
+
+<div class="schedule-wrapper">
+  <div class="time-col" id="timeCol"></div>
+  <div class="grid-container">
+    <div class="day-headers" id="dayHeaders"></div>
+    <div class="grid-body" id="gridBody"></div>
+  </div>
+</div>
+
+<div class="legend" id="legend"></div>
+
+<div class="overlap-note" id="overlapNote"></div>
+
+<script>
+// ── Constants ────────────────────────────────────────────────────────────────
+const DAYS    = [14,15,16,17,18,19,20,21];
+const START_H = 14;
+const END_H   = 24;
+const CELL_H  = 48;
+
+const PALETTE = ["#378ADD","#1D9E75","#D85A30","#c44a72","#7F77DD",
+                 "#BA7517","#5F5E5A","#3B6D11","#A32D2D","#2B7A8C","#8C5C2B"];
+
+// Foreground colours paired to each palette colour
+const FG_MAP = {
+  "#378ADD":"#e6f1fb","#1D9E75":"#e1f5ee","#D85A30":"#faece7","#c44a72":"#fbeaf0",
+  "#7F77DD":"#eeedfe","#BA7517":"#faeeda","#5F5E5A":"#f1efe8","#3B6D11":"#eaf3de",
+  "#A32D2D":"#fcebeb","#2B7A8C":"#e0f4f7","#8C5C2B":"#f7eedf"
+};
+
+const DEFAULT_MOVIES = [
+  { title:"Mother",       bg:"#378ADD", screenings:[{day:14,h:18,m:0},{day:20,h:22,m:0}],   link:"https://tiff.ro/en/festival/2026/mother" },
+  { title:"Good Boy",     bg:"#1D9E75", screenings:[{day:14,h:18,m:0},{day:16,h:18,m:30}],  link:"https://tiff.ro/en/festival/2026/good-boy" },
+  { title:"Species",      bg:"#D85A30", screenings:[{day:14,h:20,m:30},{day:15,h:18,m:0}],  link:"https://tiff.ro/en/festival/2026/species" },
+  { title:"Fuck My Son",  bg:"#c44a72", screenings:[{day:15,h:20,m:30},{day:21,h:22,m:15}], link:"https://tiff.ro/en/festival/2026/fuck-my-son" },
+  { title:"Fabula",       bg:"#7F77DD", screenings:[{day:16,h:17,m:0},{day:18,h:20,m:30}],  link:"https://tiff.ro/en/festival/2026/fabula" },
+  { title:"Gorky Resort", bg:"#BA7517", screenings:[{day:16,h:20,m:30},{day:17,h:21,m:45}], link:"https://tiff.ro/en/festival/2026/gorky-resort" },
+  { title:"Father",       bg:"#5F5E5A", screenings:[{day:16,h:22,m:15}],                    link:"https://tiff.ro/en/festival/2026/father" },
+  { title:"Mortician",    bg:"#3B6D11", screenings:[{day:18,h:18,m:15},{day:19,h:22,m:15}], link:"https://tiff.ro/en/festival/2026/mortician" },
+  { title:"Bulk",         bg:"#A32D2D", screenings:[{day:19,h:17,m:30},{day:20,h:14,m:45}], link:"https://tiff.ro/en/festival/2026/bulk" },
+];
+
+// ── State ────────────────────────────────────────────────────────────────────
+let movies = [];
+
+function loadState() {
+  try {
+    const hash = window.location.hash.slice(1);
+    if (hash) {
+      const decoded = JSON.parse(decodeURIComponent(hash));
+      if (Array.isArray(decoded) && decoded.length) return decoded;
+    }
+  } catch(e) {}
+  return DEFAULT_MOVIES.map(m => ({...m, screenings: m.screenings.map(s=>({...s}))}));
+}
+
+function saveState() {
+  const encoded = encodeURIComponent(JSON.stringify(movies));
+  history.replaceState(null, '', '#' + encoded);
+}
+
+// ── Render ───────────────────────────────────────────────────────────────────
+function render() {
+  renderTimeLabels();
+  renderDayHeaders();
+  renderGrid();
+  renderLegend();
+  renderOverlaps();
+}
+
+function renderTimeLabels() {
+  const el = document.getElementById('timeCol');
+  el.innerHTML = '';
+  for (let h = START_H; h <= END_H; h++) {
+    const d = document.createElement('div');
+    d.className = 'time-label';
+    d.textContent = `${String(h).padStart(2,'0')}:00`;
+    el.appendChild(d);
+  }
+}
+
+function renderDayHeaders() {
+  const el = document.getElementById('dayHeaders');
+  el.innerHTML = '';
+  DAYS.forEach(d => {
+    const h = document.createElement('div');
+    h.className = 'day-header';
+    h.textContent = `Jun ${d}`;
+    el.appendChild(h);
+  });
+}
+
+function renderGrid() {
+  const gridBody = document.getElementById('gridBody');
+  gridBody.innerHTML = '';
+  const columns = [];
+  DAYS.forEach(() => {
+    const col = document.createElement('div');
+    col.className = 'day-column';
+    for (let h = START_H; h < END_H; h++) {
+      const cell = document.createElement('div');
+      cell.className = 'hour-cell';
+      col.appendChild(cell);
+    }
+    gridBody.appendChild(col);
+    columns.push(col);
+  });
+
+  const slotOffsets = {};
+  movies.forEach(mv => {
+    const fg = FG_MAP[mv.bg] || '#fff';
+    mv.screenings.forEach(sc => {
+      const di = DAYS.indexOf(sc.day);
+      if (di < 0) return;
+      const col = columns[di];
+      const timeH = sc.h + sc.m / 60;
+      const top = (timeH - START_H) * CELL_H;
+      const key = `${sc.day}_${sc.h}`;
+      slotOffsets[key] = slotOffsets[key] || 0;
+      const offset = slotOffsets[key];
+      slotOffsets[key] += 24;
+
+      const block = document.createElement('div');
+      block.className = 'movie-block';
+      block.style.top = `${top + offset}px`;
+      block.style.background = mv.bg;
+      block.style.color = fg;
+      block.textContent = mv.title;
+      block.title = `${mv.title} — Jun ${sc.day} at ${String(sc.h).padStart(2,'0')}:${String(sc.m).padStart(2,'0')}`;
+      if (mv.link) { block.style.cursor = 'pointer'; block.onclick = () => window.open(mv.link,'_blank'); }
+      col.appendChild(block);
+    });
+  });
+}
+
+function renderLegend() {
+  const el = document.getElementById('legend');
+  el.innerHTML = '';
+  movies.forEach((mv, i) => {
+    const item = document.createElement('div');
+    item.className = 'legend-item';
+    item.style.cursor = 'pointer';
+    item.title = 'Click to remove';
+    item.innerHTML = `<span class="legend-swatch" style="background:${mv.bg}"></span>${mv.title} <span style="color:#bbb;font-size:10px;margin-left:2px">✕</span>`;
+    item.onclick = () => { movies.splice(i,1); saveState(); render(); };
+    if (mv.link) item.ondblclick = (e) => { e.stopPropagation(); window.open(mv.link,'_blank'); };
+    el.appendChild(item);
+  });
+}
+
+function renderOverlaps() {
+  const conflicts = [];
+  const byDayTime = {};
+  movies.forEach(mv => {
+    mv.screenings.forEach(sc => {
+      const key = `${sc.day}_${sc.h}_${sc.m}`;
+      byDayTime[key] = byDayTime[key] || [];
+      byDayTime[key].push(mv.title);
+    });
+  });
+  Object.entries(byDayTime).forEach(([key, titles]) => {
+    if (titles.length > 1) {
+      const [d,h,m] = key.split('_');
+      conflicts.push(`<strong>Jun ${d} ${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}</strong> — ${titles.join(' &amp; ')}`);
+    }
+  });
+  const el = document.getElementById('overlapNote');
+  if (conflicts.length) {
+    el.style.display = 'block';
+    el.innerHTML = `<strong>⚠ Conflicts:</strong> ` + conflicts.join(' &nbsp;|&nbsp; ');
+  } else {
+    el.style.display = 'none';
+  }
+}
+
+// ── Add movie UI ─────────────────────────────────────────────────────────────
+let selectedColor = PALETTE[0];
+
+function toggleAddPanel() {
+  const panel = document.getElementById('addPanel');
+  const visible = panel.classList.toggle('visible');
+  if (visible) {
+    document.getElementById('inp-title').value = '';
+    document.getElementById('inp-link').value = '';
+    selectedColor = PALETTE[movies.length % PALETTE.length];
+    renderColorSwatches();
+    renderScreeningRows([{day:'', time:''}]);
+  }
+}
+
+function renderColorSwatches() {
+  const el = document.getElementById('colorSwatches');
+  el.innerHTML = '';
+  PALETTE.forEach(c => {
+    const btn = document.createElement('button');
+    btn.className = 'color-swatch-btn' + (c === selectedColor ? ' selected' : '');
+    btn.style.background = c;
+    btn.title = c;
+    btn.onclick = () => { selectedColor = c; renderColorSwatches(); };
+    el.appendChild(btn);
+  });
+}
+
+function renderScreeningRows(rows) {
+  const list = document.getElementById('screeningList');
+  list.innerHTML = '';
+  rows.forEach((row, i) => {
+    const div = document.createElement('div');
+    div.className = 'screening-row';
+    div.innerHTML = `
+      <div class="form-group"><label>DAY</label>
+        <input type="number" min="1" max="31" placeholder="e.g. 14" value="${row.day}" style="width:72px" class="sc-day" /></div>
+      <div class="form-group"><label>TIME</label>
+        <input type="text" placeholder="18:30" value="${row.time}" style="width:72px" class="sc-time" /></div>
+      <button class="remove-screening" title="Remove" onclick="removeScreeningRow(${i})">✕</button>`;
+    list.appendChild(div);
+  });
+}
+
+function getScreeningRows() {
+  return [...document.getElementById('screeningList').querySelectorAll('.screening-row')].map(row => ({
+    day: row.querySelector('.sc-day').value,
+    time: row.querySelector('.sc-time').value,
+  }));
+}
+
+function addScreeningRow() {
+  renderScreeningRows([...getScreeningRows(), {day:'',time:''}]);
+}
+
+function removeScreeningRow(i) {
+  const rows = getScreeningRows();
+  rows.splice(i,1);
+  renderScreeningRows(rows.length ? rows : [{day:'',time:''}]);
+}
+
+function submitMovie() {
+  const title = document.getElementById('inp-title').value.trim();
+  const link  = document.getElementById('inp-link').value.trim();
+  if (!title) { alert('Please enter a title.'); return; }
+
+  const rows = getScreeningRows();
+  const screenings = [];
+  for (const row of rows) {
+    if (!row.day || !row.time) continue;
+    const day = parseInt(row.day);
+    const [hStr, mStr] = row.time.split(':');
+    const h = parseInt(hStr), m = parseInt(mStr||0);
+    if (isNaN(day)||isNaN(h)||isNaN(m)) { alert(`Invalid screening: day=${row.day} time=${row.time}`); return; }
+    screenings.push({day, h, m});
+  }
+  if (!screenings.length) { alert('Add at least one screening.'); return; }
+
+  movies.push({ title, bg: selectedColor, screenings, link: link || undefined });
+  saveState();
+  render();
+  toggleAddPanel();
+}
+
+// ── Share ────────────────────────────────────────────────────────────────────
+function toggleShare() {
+  const box = document.getElementById('shareBox');
+  const url = window.location.href.split('#')[0] + '#' + encodeURIComponent(JSON.stringify(movies));
+  document.getElementById('shareUrl').textContent = url;
+  box.classList.toggle('visible');
+}
+
+function copyUrl() {
+  const url = document.getElementById('shareUrl').textContent;
+  navigator.clipboard.writeText(url).then(() => {
+    const btn = document.querySelector('#shareBox .btn');
+    btn.textContent = 'Copied!';
+    setTimeout(() => btn.textContent = 'Copy', 1500);
+  });
+}
+
+function resetToDefaults() {
+  if (!confirm('Reset to the default movie list?')) return;
+  movies = DEFAULT_MOVIES.map(m => ({...m, screenings: m.screenings.map(s=>({...s}))}));
+  saveState();
+  render();
+}
+
+// ── Init ─────────────────────────────────────────────────────────────────────
+movies = loadState();
+render();
+</script>
+</body>
+</html>
